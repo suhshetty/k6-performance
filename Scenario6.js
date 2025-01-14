@@ -1,26 +1,34 @@
 import http from 'k6/http';
 import { check, sleep } from 'k6';
- 
+import { Trend } from 'k6/metrics'; // Import Trend
+
 // Declare cookieHeader outside the default function
 let cookieHeader = '';
- 
+
+// Define the Trend metric to track response time for login
+let loginResponseTime = new Trend('login_response_time', true);
+
 export const options = {
-  vus: 1, // Number of virtual users
-  duration: '3m', // Duration of the test
+  vus: 10,
+  duration: '3m',
+  tags: { scenario: 'scenario6_bucket' }, // Ensure tag is included here
 };
- 
+
+
+
+
 export default function () {
   // Fetch cookies from the GitHub repository during the test execution
   if (!cookieHeader) {
-    const cookiesUrl = 'https://raw.githubusercontent.com/suhshetty/Login-/master/cookies.json';
+    const cookiesUrl = 'https://raw.githubusercontent.com/suhshetty/Check2/main/cookies.json';
     const response = http.get(cookiesUrl);
- 
+
     // Parse cookies from the response body
     const cookies = JSON.parse(response.body);
- 
+
     // Print the fetched cookies for verification
     console.log('Fetched Cookies:', JSON.stringify(cookies));
- 
+
     // Check if ASP.NET_SessionId exists in cookies
     const aspNetSessionIdCookie = cookies.find(cookie => cookie.name === 'ASP.NET_SessionId');
     if (aspNetSessionIdCookie) {
@@ -28,14 +36,14 @@ export default function () {
     } else {
       console.log('ASP.NET_SessionId cookie not found!');
     }
- 
+
     // Convert cookies into a "Cookie" header string
     cookieHeader = cookies.map((cookie) => `${cookie.name}=${cookie.value}`).join('; ');
- 
+
     // Print the cookie header to verify
     console.log('Loaded Cookie Header:', cookieHeader);
   }
- 
+
   // Login request
   const loginUrl = 'https://kommune.mainmanager.is/mmv2/MMV2Login.aspx';
   const loginPayload = {
@@ -43,29 +51,35 @@ export default function () {
     'lgnUserLogin$Password': 'Testing@!123',
     'lgnUserLogin$Login': 'Login',
   };
- 
+
   const loginHeaders = {
     'Content-Type': 'application/x-www-form-urlencoded',
     'Cookie': cookieHeader, // Add the cookie header
   };
- 
+
   // Pause test for a moment
-  sleep(2);
- 
+  sleep(1);
+
   const loginResponse = http.post(loginUrl, loginPayload, { headers: loginHeaders, timeout: '120s' });
- 
+
+  // Record the response time of the login request
+  loginResponseTime.add(loginResponse.timings.duration);
+
   // Pause test for a moment
-  sleep(2);
- 
+  sleep(1);
+
+  
+
   // Check if the login request was successful
   check(loginResponse, {
     'Step 1 : Login successful': (res) => res.status === 200,
   });
- 
+
   // Print the response headers to ensure the cookie is being sent
   console.log('Response Headers:', JSON.stringify(loginResponse.headers));
-  sleep(2); // Pause test
- 
+  sleep(1); // Pause test
+
+
  
  
  
@@ -87,10 +101,10 @@ export default function () {
     'Content-Type': 'application/json',
     Cookie: cookieHeader,
   };
-  sleep(2); // Pause test
+  sleep(1); // Pause test
   // Send POST request
   const operation_and_maintenance_response = http.post(operation_and_maintenance_url, operation_and_maintenance_payload, { headers: operation_and_maintenance_headers, timeout: "120s" });
-  sleep(2); // Pause test
+  sleep(1); // Pause test
   // Validate response
   check(operation_and_maintenance_response, {
     'Step 2a : Select Operation and Maintenance, Status is 200': (r) => r.status === 200,
@@ -100,7 +114,7 @@ export default function () {
   // Log the response for debugging
   console.log('Step 2a : -----> Operation and Maintenance Body:', operation_and_maintenance_response.body);
  
-  sleep(2); // Pause test
+  sleep(1); // Pause test
  
   // Step 2b : Select Operation and Maintenance
   const task_planning_url = 'https://kommune.mainmanager.is/mmv2/services/MMLayoutReadOnly.asmx/GetMenuItemProcessItems';
@@ -116,10 +130,10 @@ export default function () {
     'Content-Type': 'application/json',
     Cookie: cookieHeader,
   };
-  sleep(2); // Pause test
+  sleep(1); // Pause test
   // Send POST request
   const task_planning_response = http.post(task_planning_url, task_planning_payload, { headers: task_planning_headers, timeout: "120s" });
-  sleep(2); // Pause test
+  sleep(1); // Pause test
   // Validate response
   check(task_planning_response, {
     'Step 2b : Select Operation and Maintenance, Status is 200': (r) => r.status === 200,
@@ -129,7 +143,7 @@ export default function () {
   // Log the response for debugging
   console.log('Step 2b : -----> Select Operation and Maintenance:', task_planning_response.body);
  
-  sleep(2); // Pause test
+  sleep(1); // Pause test
  
   // Step 3 : Select Work order overview
   const requests_url = 'https://kommune.mainmanager.is/mmv2/services/MMLayoutReadOnly.asmx/GetMenuItemProcessItems';
@@ -145,10 +159,10 @@ export default function () {
     'Content-Type': 'application/json',
     Cookie: cookieHeader,
   };
-  sleep(2); // Pause test
+  sleep(1); // Pause test
   // Send POST request
   const requests_response = http.post(requests_url, requests_payload, { headers: requests_headers , timeout: "120s"});
-  sleep(2); // Pause test
+  sleep(1); // Pause test
   // Validate response
   check(requests_response, {
     'Step 3 : Select Work order overview, Status is 200': (r) => r.status === 200,
@@ -158,7 +172,7 @@ export default function () {
   // Log the response for debugging
   console.log('Step 3 : -----> Select Work order overview body:', requests_response.body);
  
-  sleep(2); // Pause test
+  sleep(1); // Pause test
  
   // Step 4a : Click on Work Orders
   const init_main_layout_url = 'https://kommune.mainmanager.is/mmv2/services/MMLayout.asmx/InitMainLayout';
@@ -180,10 +194,10 @@ export default function () {
     'Content-Type': 'application/json',
     Cookie: cookieHeader,
   };
-  sleep(2); // Pause test
+  sleep(1); // Pause test
   // Send POST request
   const init_main_layout_response = http.post(init_main_layout_url, init_main_layout_payload, { headers: init_main_layout_headers, timeout: "120s" });
-  sleep(2); // Pause test
+  sleep(1); // Pause test
   // Validate response
   check(init_main_layout_response, {
     'Step 4a : Click on Work Orders, Status is 200': (r) => r.status === 200,
@@ -193,7 +207,7 @@ export default function () {
   // Log the response for debugging
   console.log('Step 4a : -----> Click on Work Orders Body:', init_main_layout_response.body);
  
-  sleep(2); // Pause test
+  sleep(1); // Pause test
  
  
  
@@ -249,10 +263,10 @@ export default function () {
     'Content-Type': 'application/json',
     Cookie: cookieHeader,
   };
-  sleep(2); // Pause test
+  sleep(1); // Pause test
   // Send POST request
   const empty_data_filter_response = http.post(empty_data_filter_url, empty_data_filter_payload, { headers: empty_data_filter_headers , timeout: "120s"});
-  sleep(2); // Pause test
+  sleep(1); // Pause test
   // Validate response
   check(empty_data_filter_response, {
     'Step 5 : Empty Data Filter, Status is 200': (r) => r.status === 200,
@@ -262,7 +276,7 @@ export default function () {
   // Log the response for debugging
   console.log('Step 5 : -----> Empty Data Filter Body:', empty_data_filter_response.body);
  
-  sleep(2); // Pause test
+  sleep(1); // Pause test
  
   // Step 6 : Open a work order
   const load_mm_modal_control_url = 'https://kommune.mainmanager.is/mmv2/services/MMLayout.asmx/LoadMMModalControl';
@@ -292,14 +306,14 @@ export default function () {
     'Content-Type': 'application/json',
     Cookie: cookieHeader,
   };
-  sleep(2); // Pause test
+  sleep(1); // Pause test
   // Send POST request
   const load_mm_modal_control_response = http.post(
     load_mm_modal_control_url,
     load_mm_modal_control_payload,
     { headers: load_mm_modal_control_headers }
   );
-  sleep(2); // Pause test
+  sleep(1); // Pause test
   // Validate response
   check(load_mm_modal_control_response, {
     'Step 6 : Open a work order , Status is 200': (r) => r.status === 200,
@@ -309,7 +323,7 @@ export default function () {
   // Log the response for debugging
   console.log('Step 6 : -----> Open a work order Body:', load_mm_modal_control_response.body);
  
-  sleep(2); // Pause test
+  sleep(1); // Pause test
  
   // Step 7a : Select Operation and Maintenance
   const op_and_maint_url = 'https://kommune.mainmanager.is/mmv2/services/MMLayoutReadOnly.asmx/GetMenuItemSteps';
@@ -324,10 +338,10 @@ export default function () {
     'Content-Type': 'application/json',
     Cookie: cookieHeader,
   };
-  sleep(2); // Pause test
+  sleep(1); // Pause test
   // Send POST request
   const op_and_maint_response = http.post(op_and_maint_url, op_and_maint_payload, { headers: op_and_maint_headers, timeout: "120s" });
-  sleep(2); // Pause test
+  sleep(1); // Pause test
   // Validate response
   check(op_and_maint_response, {
     'Step 7a : Select Operation and Maintenance, Status is 200': (r) => r.status === 200,
@@ -337,7 +351,7 @@ export default function () {
   // Log the response for debugging
   console.log('Step 7a : -----> Operation and Maintenance Body:', op_and_maint_response.body);
  
-  sleep(2); // Pause test
+  sleep(1); // Pause test
  
   // Step 7b : Select Task Planning
   const task_plan_url = 'https://kommune.mainmanager.is/mmv2/services/MMLayoutReadOnly.asmx/GetMenuItemProcessItems';
@@ -353,10 +367,10 @@ export default function () {
     'Content-Type': 'application/json',
     Cookie: cookieHeader,
   };
-  sleep(2); // Pause test
+  sleep(1); // Pause test
   // Send POST request
   const task_plan_response = http.post(task_plan_url, task_plan_payload, { headers: task_plan_headers , timeout: "120s"});
-  sleep(2); // Pause test
+  sleep(1); // Pause test
   // Validate response
   check(task_plan_response, {
     'Step 7b : Select Operation and Maintenance, Status is 200': (r) => r.status === 200,
@@ -366,7 +380,7 @@ export default function () {
   // Log the response for debugging
   console.log('Step 7b : -----> Task Planning Body:', task_plan_response.body);
  
-  sleep(2); // Pause test
+  sleep(1); // Pause test
  
   // Step 8 : Select Work Order Overview
   const work_order_overview_url = 'https://kommune.mainmanager.is/mmv2/services/MMLayoutReadOnly.asmx/GetMenuItemProcessItems';
@@ -382,10 +396,10 @@ export default function () {
     'Content-Type': 'application/json',
     Cookie: cookieHeader,
   };
-  sleep(2); // Pause test
+  sleep(1); // Pause test
   // Send POST request
   const work_order_response = http.post(work_order_overview_url, work_order_payload, { headers: work_order_headers, timeout: "120s" });
-  sleep(2); // Pause test
+  sleep(1); // Pause test
  
   // Validate response
   check(work_order_response, {
@@ -396,7 +410,7 @@ export default function () {
   // Log the response for debugging
   console.log('Step 8 : -----> Work Order Overview Body:', work_order_response.body);
  
-  sleep(2); // Pause test
+  sleep(1); // Pause test
  
   // Step 9a : Click on Work Orders
   const main_layout_url = 'https://kommune.mainmanager.is/mmv2/services/MMLayout.asmx/InitMainLayout';
@@ -418,10 +432,10 @@ export default function () {
     'Content-Type': 'application/json',
     Cookie: cookieHeader,
   };
-  sleep(2); // Pause test
+  sleep(1); // Pause test
   // Send POST request
   const main_layout_response = http.post(main_layout_url, main_layout_payload, { headers: main_layout_headers, timeout: "120s" });
-  sleep(2); // Pause test
+  sleep(1); // Pause test
   // Validate response
   check(main_layout_response, {
     'Step 9a : Click on Work Orders, Status is 200': (r) => r.status === 200,
@@ -431,7 +445,7 @@ export default function () {
   // Log the response for debugging
   console.log('Step 9a : -----> Work Orders Body:', main_layout_response.body);
  
-  sleep(2); // Pause test
+  sleep(1); // Pause test
  
   // Step 9b : Fetch Work Orders List Headers
   const list_headers_url = 'https://kommune.mainmanager.is/mmv2/restapi/List/GetMMListHeaders?DataPath=Request%241%240&UniqueString=ddc3f428aaec43cbb4d3d2f6849e9b26&Gantt=False&PopupSQLListIndex=0&_1733734358981';
@@ -441,10 +455,10 @@ export default function () {
     'Content-Type': 'application/json',
     Cookie: cookieHeader,
   };
-  sleep(2); // Pause test
+  sleep(1); // Pause test
   // Send GET request
   const list_headers_response = http.get(list_headers_url, { headers: list_headers_headers, timeout: "120s" });
-  sleep(2); // Pause test
+  sleep(1); // Pause test
   // Validate response
   check(list_headers_response, {
     'Step 9b : Click on Work Orders, Status is 200': (r) => r.status === 200,
@@ -454,7 +468,7 @@ export default function () {
   // Log the response for debugging
   console.log('Step 9b : -----> Work Orders List Headers Body:', list_headers_response.body);
  
-  sleep(2); // Pause test
+  sleep(1); // Pause test
  
   // Step 10 : Fetch Combobox Data for Lease Contracts
   const combobox_data_url = 'https://kommune.mainmanager.is/mmv2/restapi/List/ComboboxData?DataPath=PurchaseOrderIncident%241%240%7CGroundID%2412%240&UniqueString=ce4ad9a6e9814da7ae038d7379ecd0d9&p=1&q=';
@@ -464,10 +478,10 @@ export default function () {
     'Content-Type': 'application/json',
     Cookie: cookieHeader,
   };
-  sleep(2); // Pause test
+  sleep(1); // Pause test
   // Send GET request
   const combobox_data_response = http.get(combobox_data_url, { headers: combobox_data_headers, timeout: "120s" });
-  sleep(2); // Pause test
+  sleep(1); // Pause test
  
   // Validate response
   check(combobox_data_response, {
@@ -478,7 +492,7 @@ export default function () {
   // Log the response for debugging
   console.log('Step 10 : -----> Combobox Data Response Body:', combobox_data_response.body);
  
-  sleep(2); // Pause test
+  sleep(1); // Pause test
  
   // Step 11 : Fetch MM List Data for Lease Contracts( Aktivitetscenter )
   const mm_list_url = 'https://kommune.mainmanager.is/mmv2/restapi/List/GetMMList';
@@ -488,10 +502,10 @@ export default function () {
     'Content-Type': 'application/json',
     Cookie: cookieHeader,
   };
-  sleep(2); // Pause test
+  sleep(1); // Pause test
   // Send POST request
   const mm_list_response = http.post(mm_list_url, null, { headers: mm_list_headers, timeout: "120s" });
-  sleep(2); // Pause test
+  sleep(1); // Pause test
   // Validate response
   check(mm_list_response, {
     'Step 11 : Fetch MM List Data for Lease Contracts (  Aktivitetscenter ), Status is 200': (r) => r.status === 200,
@@ -501,7 +515,7 @@ export default function () {
   // Log the response for debugging
   console.log('Step 11 : -----> MM List Data Response Body:', mm_list_response.body);
  
-  sleep(2); // Pause test
+  sleep(1); // Pause test
  
   // Step 12 : Fetch Work Orders List Headers2
   const list_headers_url2 = 'https://kommune.mainmanager.is/mmv2/restapi/List/GetMMListHeaders?DataPath=Request%241%240&UniqueString=ddc3f428aaec43cbb4d3d2f6849e9b26&Gantt=False&PopupSQLListIndex=0&_1733734358981';
@@ -511,10 +525,10 @@ export default function () {
     'Content-Type': 'application/json',
     Cookie: cookieHeader,
   };
-  sleep(2); // Pause test
+  sleep(1); // Pause test
   // Send GET request
   const list_headers_response2 = http.get(list_headers_url2, { headers: list_headers_headers2, timeout: "120s" });
-  sleep(2); // Pause test
+  sleep(1); // Pause test
   // Validate response
   check(list_headers_response2, {
     'Step 12 : Click on Work Orders, Status is 200': (r) => r.status === 200,
@@ -524,7 +538,7 @@ export default function () {
   // Log the response for debugging
   console.log('Step 12 : -----> Work Orders List Headers Body2:', list_headers_response2.body);
  
-  sleep(2); // Pause test
+  sleep(1); // Pause test
  
   // Step 13 : Clear the filter for Site
   const refresh_main_man_filter_url = 'https://kommune.mainmanager.is/mmv2/services/MMLayout.asmx/RefreshMainManFilter';
@@ -546,10 +560,10 @@ export default function () {
     'Content-Type': 'application/json',
     Cookie: cookieHeader,
   };
-  sleep(2); // Pause test
+  sleep(1); // Pause test
   // Send POST request
   const refresh_main_man_filter_response = http.post(refresh_main_man_filter_url, refresh_main_man_filter_payload, { headers: refresh_main_man_filter_headers, timeout: "120s" });
-  sleep(2); // Pause test
+  sleep(1); // Pause test
   // Validate response
   check(refresh_main_man_filter_response, {
     'Step 13 : Clear the filter for Site, Status is 200': (r) => r.status === 200,
@@ -560,7 +574,7 @@ export default function () {
   // Log the response for debugging
   console.log('Step 13 : -----> Clear the filter for Siter Response Body:', refresh_main_man_filter_response.body);
  
-  sleep(2); // Pause test
+  sleep(1); // Pause test
  
   // Step 14a : Select Operation and Maintenance
   const operation_and_maintenance_url_ = 'https://kommune.mainmanager.is/mmv2/services/MMLayoutReadOnly.asmx/GetMenuItemSteps';
@@ -576,10 +590,10 @@ export default function () {
     Cookie: cookieHeader,
   };
  
-  sleep(2); // Pause test
+  sleep(1); // Pause test
   // Send POST request
   const operation_and_maintenance_response_ = http.post(operation_and_maintenance_url_, operation_and_maintenance_payload_, { headers: operation_and_maintenance_headers_, timeout: "120s" });
-  sleep(2); // Pause test
+  sleep(1); // Pause test
  
   // Validate response
   check(operation_and_maintenance_response_, {
@@ -590,7 +604,7 @@ export default function () {
   // Log the response for debugging
   console.log('Step 14a : -----> Operation and Maintenance Body:', operation_and_maintenance_response_.body);
  
-  sleep(2); // Pause test
+  sleep(1); // Pause test
  
   // Step 14b : Select Operation and Maintenance
   const task_planning_url_ = 'https://kommune.mainmanager.is/mmv2/services/MMLayoutReadOnly.asmx/GetMenuItemProcessItems';
@@ -606,10 +620,10 @@ export default function () {
     'Content-Type': 'application/json',
     Cookie: cookieHeader,
   };
-  sleep(2); // Pause test
+  sleep(1); // Pause test
   // Send POST request
   const task_planning_response_ = http.post(task_planning_url_, task_planning_payload_, { headers: task_planning_headers_ , timeout: "120s"});
-  sleep(2); // Pause test
+  sleep(1); // Pause test
   // Validate response
   check(task_planning_response_, {
     'Step 14b : Select Operation and Maintenance, Status is 200': (r) => r.status === 200,
@@ -619,7 +633,7 @@ export default function () {
   // Log the response for debugging
   console.log('Step 14b : -----> Select Operation and Maintenance:', task_planning_response_.body);
  
-  sleep(2); // Pause test
+  sleep(1); // Pause test
  
   // Step 15 : Select Work order overview
   const requests_url_ = 'https://kommune.mainmanager.is/mmv2/services/MMLayoutReadOnly.asmx/GetMenuItemProcessItems';
@@ -635,10 +649,10 @@ export default function () {
     'Content-Type': 'application/json',
     Cookie: cookieHeader,
   };
-  sleep(2); // Pause test
+  sleep(1); // Pause test
   // Send POST request
   const requests_response_ = http.post(requests_url_, requests_payload_, { headers: requests_headers_ , timeout: "120s"});
-  sleep(2); // Pause test
+  sleep(1); // Pause test
   // Validate response
   check(requests_response_, {
     'Step 15 : Select Work order overview, Status is 200': (r) => r.status === 200,
@@ -648,7 +662,7 @@ export default function () {
   // Log the response for debugging
   console.log('Step 15 : -----> Select Work order overview body:', requests_response_.body);
  
-  sleep(2); // Pause test
+  sleep(1); // Pause test
  
  
   // Step 16 : Click on pin filter
@@ -664,9 +678,9 @@ export default function () {
   };
  
   //Click on "API Endpoint"
-  sleep(2); // Pause test
+  sleep(1); // Pause test
   const apiResponse = http.post(apiUrl, null, { headers: buildingArchiveHeaders , timeout: "120s"});
-  sleep(2); // Pause test
+  sleep(1); // Pause test
  
   // Check if the response contains the text "ShowBIM" and status is 200
   check(apiResponse, {
@@ -677,7 +691,7 @@ export default function () {
   // Log the response for debugging
   console.log('Step 16 : -----> Select Work order overview body:', requests_response_.body);
  
-  sleep(2); // Pause test
+  sleep(1); // Pause test
  
  
   // Step 17 : Word order status : Select All
@@ -715,7 +729,7 @@ export default function () {
       ]
   });
  
-  sleep(2); // Pause test
+  sleep(1); // Pause test
   const apiResponse_ = http.post(apiUrl_, payload_, { headers: buildingArchiveHeaders_, timeout: "120s" });
   sleep(4); // Pause test
  
@@ -725,7 +739,7 @@ export default function () {
       'STEP 17: API response contains ControlID': (res) => res.body.includes('ControlID'),
   });
  
-  sleep(2); // Pause test
+  sleep(1); // Pause test
  
  
   // Step 18 : Word order status : Deselet All
@@ -740,9 +754,9 @@ export default function () {
   };
  
   // Click on "API Endpoint"
-  sleep(2); // Pause test
+  sleep(1); // Pause test
   const apiResponse__  = http.post(apiUrl__ , null, { headers: buildingArchiveHeaders__ , timeout: "120s" });
-  sleep(2); // Pause test
+  sleep(1); // Pause test
  
   // Check if the response contains the text "ShowBIM" and status is 200
   check(apiResponse, {
@@ -755,7 +769,7 @@ export default function () {
   console.log('Step 18 : -----> Select Work order overview body:', requests_response_.body);
  
  
-  sleep(2); // Pause test
+  sleep(1); // Pause test
  
   // Step 19 : Clear filter
   // Constants
@@ -790,7 +804,7 @@ export default function () {
       ]
   });
  
-  sleep(2); // Pause test
+  sleep(1); // Pause test
   const apiResponse___  = http.post(apiUrl___ , payload___ , { headers: buildingArchiveHeaders___ , timeout: "120s" });
   sleep(4); // Pause test
  
@@ -800,7 +814,7 @@ export default function () {
       'STEP 19: API response contains FormRefresh': (res) => res.body.includes('FormRefresh'),
   });
  
-  sleep(2); // Pause test
+  sleep(1); // Pause test
  
             // STEP 20: Logout Request
     const logoutUrl = 'https://kommune.mainmanager.is/mmv2/MMV2Logout.aspx';
@@ -810,9 +824,9 @@ export default function () {
       //'Cookie': cookieHeader,
     };
  
-    sleep(2); // Pause test
+    sleep(1); // Pause test
     const logoutResponse = http.get(logoutUrl, { headers: logoutHeaders ,  timeout: "120s"});
-    sleep(2); // Pause test
+    sleep(1); // Pause test
  
     check(logoutResponse, {
       'STEP 20 : Logout Request, Status is 200': (r) => r.status === 200,
