@@ -9,7 +9,7 @@ let cookieHeader = '';
 let loginResponseTime = new Trend('login_response_time', true);
 
 export const options = {
-  vus: 10,
+  vus: 1,
   duration: '3m',
   tags: { scenario: 'scenario6_bucket' }, // Ensure tag is included here
 };
